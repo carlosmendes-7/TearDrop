@@ -116,7 +116,7 @@ void send_frags(int sock, u_long src_ip, u_long dst_ip, u_short src_prt, u_short
     p_ptr = packet; 
     bzero((u_char *)p_ptr, IPH + UDPH + PADDING);
 
-    byte = 0x45; /* 0100_0101 IP version 4 and header length 5 32-bit words */ 
+    byte = 0x45; /* 0100_0101 IP version 4 and header length 5 32-bit words = 20 bytes */ 
     memcpy(p_ptr, &byte, sizeof(u_char)); 
 
     p_ptr += 2; /* IP TypeOfService (skipped) */ 
